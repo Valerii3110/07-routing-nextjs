@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { createNote } from '@/lib/api';
-import type { CreateNoteData, NoteTag } from '@/types/note';
+import type { NoteTag } from '@/types/note';
 import css from './NoteForm.module.css';
 
 interface NoteFormProps {
@@ -23,10 +23,11 @@ const validationSchema = Yup.object({
     .required('Tag is required'),
 });
 
-const initialValues: CreateNoteData = {
+// Використовуємо рядок замість масиву для одного тегу
+const initialValues = {
   title: '',
   content: '',
-  tag: 'Personal',
+  tag: 'Personal' as NoteTag, // Змінити на рядок, не масив
 };
 
 export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
@@ -40,8 +41,14 @@ export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
     },
   });
 
-  const handleSubmit = (values: CreateNoteData) => {
-    mutation.mutate(values);
+  const handleSubmit = (values: typeof initialValues) => {
+    // Перетворюємо tag (рядок) в tags (масив) для API
+    const apiData = {
+      title: values.title,
+      content: values.content,
+      tags: [values.tag], // values.tag - це рядок, тому [values.tag] створює масив з одного елемента
+    };
+    mutation.mutate(apiData);
   };
 
   return (
