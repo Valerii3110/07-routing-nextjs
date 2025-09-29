@@ -17,17 +17,19 @@ const validationSchema = Yup.object({
     .required('Title is required')
     .min(3, 'Title must be at least 3 characters')
     .max(50, 'Title must be less than 50 characters'),
-  content: Yup.string().max(500, 'Content must be less than 500 characters').optional(),
-  tag: Yup.string()
-    .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as NoteTag[])
-    .required('Tag is required'),
+  content: Yup.string()
+    .max(500, 'Content must be less than 500 characters')
+    .required('Content is required'), // Зробити обов'язковим
+  tags: Yup.array()
+    .of(Yup.string().oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as NoteTag[]))
+    .min(1, 'At least one tag is required')
+    .required('Tags are required'),
 });
 
-// Використовуємо рядок замість масиву для одного тегу
 const initialValues = {
   title: '',
-  content: '',
-  tag: 'Personal' as NoteTag, // Змінити на рядок, не масив
+  content: '', // Завжди рядок, не undefined
+  tags: ['Personal'] as NoteTag[],
 };
 
 export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
@@ -42,13 +44,11 @@ export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
   });
 
   const handleSubmit = (values: typeof initialValues) => {
-    // Перетворюємо tag (рядок) в tags (масив) для API
-    const apiData = {
+    mutation.mutate({
       title: values.title,
-      content: values.content,
-      tags: [values.tag], // values.tag - це рядок, тому [values.tag] створює масив з одного елемента
-    };
-    mutation.mutate(apiData);
+      content: values.content, // Тепер content завжди рядок
+      tags: values.tags,
+    });
   };
 
   return (
@@ -57,7 +57,7 @@ export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
       validationSchema={validationSchema}
       onSubmit={handleSubmit}
     >
-      {({ isSubmitting }) => (
+      {({ isSubmitting, values, setFieldValue }) => (
         <Form className={css.form}>
           <div className={css.formGroup}>
             <label htmlFor="title">Title *</label>
@@ -66,21 +66,35 @@ export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
           </div>
 
           <div className={css.formGroup}>
-            <label htmlFor="content">Content</label>
+            <label htmlFor="content">Content *</label>
             <Field as="textarea" id="content" name="content" className={css.textarea} rows={4} />
             <ErrorMessage name="content" component="span" className={css.error} />
           </div>
 
           <div className={css.formGroup}>
-            <label htmlFor="tag">Tag</label>
-            <Field as="select" id="tag" name="tag" className={css.select}>
-              <option value="Todo">Todo</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Meeting">Meeting</option>
-              <option value="Shopping">Shopping</option>
-            </Field>
-            <ErrorMessage name="tag" component="span" className={css.error} />
+            <label>Tags *</label>
+            <div className={css.tags}>
+              {(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as NoteTag[]).map((tag) => (
+                <label key={tag} className={css.tagLabel}>
+                  <input
+                    type="checkbox"
+                    checked={values.tags.includes(tag)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFieldValue('tags', [...values.tags, tag]);
+                      } else {
+                        setFieldValue(
+                          'tags',
+                          values.tags.filter((t) => t !== tag),
+                        );
+                      }
+                    }}
+                  />
+                  {tag}
+                </label>
+              ))}
+            </div>
+            <ErrorMessage name="tags" component="span" className={css.error} />
           </div>
 
           <div className={css.actions}>

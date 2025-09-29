@@ -1,24 +1,40 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchNotes, createNote, deleteNote } from '../../lib/api';
-import type { Note, NoteTag } from '@/types/note';
-
-export interface FetchNotesResponse {
-  notes: Note[];
-  totalPages: number;
-}
-
-export const useNotes = (page = 1, perPage = 12, search = '') => {
-  return useQuery<FetchNotesResponse>({
-    queryKey: ['notes', page, search],
-    queryFn: () => fetchNotes({ page, perPage, search }),
-  });
-};
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createNote, updateNote, deleteNote } from '@/lib/api';
 
 export const useCreateNote = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { title: string; content?: string; tag: NoteTag }) => createNote(data),
+    mutationFn: (data: { title: string; content?: string; tags: string[] }) =>
+      createNote({
+        title: data.title,
+        content: data.content || '', // Забезпечуємо, що content завжди рядок
+        tags: data.tags,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notes'] }),
+  });
+};
+
+// Або зробити content обов'язковим
+export const useCreateNoteStrict = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { title: string; content: string; tags: string[] }) => createNote(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notes'] }),
+  });
+};
+
+export const useUpdateNote = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { title?: string; content?: string; tags?: string[] }) =>
+      updateNote(id, {
+        ...data,
+        content: data.content || '', // Забезпечуємо, що content завжди рядок
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notes'] });
+      qc.invalidateQueries({ queryKey: ['note', id] });
+    },
   });
 };
 
