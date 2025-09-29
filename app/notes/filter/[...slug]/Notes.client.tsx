@@ -10,7 +10,11 @@ import Modal from '@/components/Modal/Modal';
 import NoteForm from '@/components/NoteForm/NoteForm';
 import css from './NotesPage.module.css';
 
-export default function NotesClient() {
+interface NotesClientProps {
+  initialTag: string;
+}
+
+export default function NotesClient({ initialTag }: NotesClientProps) {
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
   const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState<string>('');
@@ -19,15 +23,24 @@ export default function NotesClient() {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1);
+      setPage(1); // Скидаємо на першу сторінку при зміні пошуку
     }, 500);
 
     return () => clearTimeout(handler);
   }, [search]);
 
+  // Визначаємо тег для API: для "All" не передаємо, для інших - передаємо
+  const apiTag = initialTag === 'All' ? undefined : initialTag;
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['notes', page, debouncedSearch],
-    queryFn: () => fetchNotes({ page, perPage: 12, search: debouncedSearch }),
+    queryKey: ['notes', page, apiTag, debouncedSearch],
+    queryFn: () =>
+      fetchNotes({
+        page,
+        perPage: 12,
+        tag: apiTag,
+        search: debouncedSearch.trim() === '' ? undefined : debouncedSearch,
+      }),
     placeholderData: (previousData) => previousData,
   });
 

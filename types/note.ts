@@ -1,4 +1,10 @@
-export type NoteTag = 'Todo' | 'Work' | 'Personal' | 'Meeting' | 'Shopping';
+export enum NoteTag {
+  Todo = 'Todo',
+  Work = 'Work',
+  Personal = 'Personal',
+  Meeting = 'Meeting',
+  Shopping = 'Shopping',
+}
 
 export interface Note {
   id: string;
