@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNotes } from '@/lib/api';
+import { NoteTag } from '@/types/note';
 import SearchBox from '@/components/SearchBox/SearchBox';
 import Pagination from '@/components/Pagination/Pagination';
 import NoteList from '@/components/NoteList/NoteList';
@@ -29,8 +30,13 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Визначаємо тег для API: для "All" не передаємо, для інших - передаємо
-  const apiTag = initialTag === 'All' ? undefined : initialTag;
+  // Визначаємо тег для API: приводимо рядок до NoteTag або undefined
+  const apiTag: NoteTag | undefined =
+    initialTag === 'All'
+      ? undefined
+      : Object.values(NoteTag).includes(initialTag as NoteTag)
+        ? (initialTag as NoteTag)
+        : undefined;
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['notes', page, apiTag, debouncedSearch],
@@ -48,9 +54,14 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
     <div className={css.app}>
       <header className={css.toolbar}>
         <SearchBox value={search} onSearch={setSearch} />
-        {data?.totalPages && data.totalPages > 1 && (
-          <Pagination page={page} pageCount={data.totalPages} onChangePage={setPage} />
+        {data && Math.ceil(data.total / data.perPage) > 1 && (
+          <Pagination
+            page={page}
+            pageCount={Math.ceil(data.total / data.perPage)}
+            onChangePage={setPage}
+          />
         )}
+
         <button className={css.button} onClick={() => setModalOpen(true)}>
           Create note +
         </button>
