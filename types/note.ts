@@ -10,19 +10,13 @@ export interface Note {
   id: string;
   title: string;
   content?: string;
-  tag: NoteTag;
+  tag: NoteTag; // суворий enum
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateNoteData {
-  title: string;
-  content?: string;
-  tag: NoteTag;
-}
+// DTO для створення
+export type CreateNoteData = Pick<Note, 'title' | 'content' | 'tag'>;
 
-export interface UpdateNoteData {
-  title?: string;
-  content?: string;
-  tag?: NoteTag;
-}
+// DTO для оновлення
+export type UpdateNoteData = Partial<CreateNoteData>;

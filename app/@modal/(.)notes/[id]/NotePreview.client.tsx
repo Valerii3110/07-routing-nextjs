@@ -3,7 +3,7 @@
 import css from './NotePreview.module.css';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSingleNote } from '@/lib/api';
+import { fetchNoteById } from '@/lib/api';
 import Loader from '@/app/loading';
 import Modal from '@/components/Modal/Modal';
 
@@ -19,18 +19,15 @@ const NotePreview = () => {
     error,
   } = useQuery({
     queryKey: ['note', id],
-    queryFn: () => fetchSingleNote(id!),
+    queryFn: () => fetchNoteById(id!),
     refetchOnMount: false,
     enabled: !!id,
   });
 
   if (isLoading) return <Loader />;
-
   if (error || !note) return <p>Something went wrong.</p>;
 
-  const formattedDate = note.updatedAt
-    ? `Updated at: ${new Date(note.updatedAt).toLocaleDateString()}`
-    : `Created at: ${new Date(note.createdAt).toLocaleDateString()}`;
+  const formattedDate = `Created at: ${new Date(note.createdAt).toLocaleDateString()}`;
 
   return (
     <Modal onClose={close}>
@@ -44,14 +41,9 @@ const NotePreview = () => {
           </div>
           <p className={css.content}>{note.content}</p>
 
-          {/* Виправлено для масиву тегів */}
-          {note.tags && note.tags.length > 0 && (
+          {note.tag && (
             <div className={css.tags}>
-              {note.tags.map((tag: string) => (
-                <span key={tag} className={css.tag}>
-                  {tag}
-                </span>
-              ))}
+              <span className={css.tag}>{note.tag}</span>
             </div>
           )}
 

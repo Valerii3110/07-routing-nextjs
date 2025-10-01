@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { createNote } from '@/lib/api';
-import type { NoteTag } from '@/types/note';
+import { NoteTag, CreateNoteData } from '@/types/note';
 import css from './NoteForm.module.css';
 
 interface NoteFormProps {
@@ -18,16 +18,16 @@ const validationSchema = Yup.object({
     .min(3, 'Title must be at least 3 characters')
     .max(50, 'Title must be less than 50 characters'),
   content: Yup.string().max(500, 'Content must be less than 500 characters').optional(),
-  tag: Yup.string()
+  tag: Yup.mixed<NoteTag>()
     .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as NoteTag[])
     .required('Tag is required'),
 });
 
-// Використовуємо рядок замість масиву для одного тегу
-const initialValues = {
+// Початкові значення для форми
+const initialValues: CreateNoteData = {
   title: '',
   content: '',
-  tag: 'Personal' as NoteTag, // Змінити на рядок, не масив
+  tag: NoteTag.Personal, // за замовчуванням Personal
 };
 
 export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
@@ -41,21 +41,15 @@ export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
     },
   });
 
-  const handleSubmit = (values: typeof initialValues) => {
-    // Перетворюємо tag (рядок) в tags (масив) для API
-    const apiData = {
-      title: values.title,
-      content: values.content,
-      tags: [values.tag], // values.tag - це рядок, тому [values.tag] створює масив з одного елемента
-    };
-    mutation.mutate(apiData);
-  };
-
   return (
     <Formik
       initialValues={initialValues}
       validationSchema={validationSchema}
-      onSubmit={handleSubmit}
+      onSubmit={(values, { setSubmitting }) => {
+        mutation.mutate(values, {
+          onSettled: () => setSubmitting(false),
+        });
+      }}
     >
       {({ isSubmitting }) => (
         <Form className={css.form}>
@@ -72,7 +66,7 @@ export default function NoteForm({ onSuccess, onCancel }: NoteFormProps) {
           </div>
 
           <div className={css.formGroup}>
-            <label htmlFor="tag">Tag</label>
+            <label htmlFor="tag">Tag *</label>
             <Field as="select" id="tag" name="tag" className={css.select}>
               <option value="Todo">Todo</option>
               <option value="Work">Work</option>

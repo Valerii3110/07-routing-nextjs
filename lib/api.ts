@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Note, NoteTag, CreateNoteData, UpdateNoteData } from '@/types/note';
 
 const BASE_URL = 'https://notehub-public.goit.study/api';
 const token = process.env.NEXT_PUBLIC_NOTEHUB_TOKEN;
@@ -11,6 +12,21 @@ const api = axios.create({
   },
 });
 
+interface ApiNote {
+  id: string;
+  title: string;
+  content?: string;
+  tag: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const mapNote = (apiNote: ApiNote): Note => ({
+  ...apiNote,
+  tag: apiNote.tag as NoteTag,
+  content: apiNote.content ?? '',
+});
+
 export const fetchNotes = async ({
   page = 1,
   perPage = 12,
@@ -19,80 +35,45 @@ export const fetchNotes = async ({
 }: {
   page?: number;
   perPage?: number;
-  tag?: string;
+  tag?: NoteTag;
   search?: string;
-} = {}) => {
-  try {
-    const params: Record<string, string> = {
-      page: page.toString(),
-      perPage: perPage.toString(),
-    };
+} = {}): Promise<{ notes: Note[]; total: number; page: number; perPage: number }> => {
+  const params: Record<string, string> = {
+    page: page.toString(),
+    perPage: perPage.toString(),
+  };
 
-    // Додаємо tag тільки якщо він переданий
-    if (tag) {
-      params.tag = tag;
-    }
+  if (tag) params.tag = tag;
+  if (search?.trim()) params.search = search;
 
-    // Додаємо search тільки якщо він переданий і не пустий
-    if (search && search.trim() !== '') {
-      params.search = search;
-    }
-
-    const response = await api.get('/notes', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching notes:', error);
-    throw error;
-  }
+  const response = await api.get<{
+    notes: ApiNote[];
+    total: number;
+    page: number;
+    perPage: number;
+  }>('/notes', { params });
+  return {
+    ...response.data,
+    notes: response.data.notes.map(mapNote),
+  };
 };
 
-// Додаємо функцію для отримання однієї нотатки
-export const fetchSingleNote = async (id: string) => {
-  try {
-    const response = await api.get(`/notes/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching note ${id}:`, error);
-    throw error;
-  }
+export const fetchNoteById = async (id: string): Promise<Note> => {
+  const response = await api.get<ApiNote>(`/notes/${id}`);
+  return mapNote(response.data);
 };
 
-export { fetchSingleNote as fetchNoteById } from './api';
-
-// Інші API функції (createNote, updateNote, deleteNote тощо)
-export const createNote = async (noteData: { title: string; content: string; tags: string[] }) => {
-  try {
-    const response = await api.post('/notes', noteData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating note:', error);
-    throw error;
-  }
+export const createNote = async (noteData: CreateNoteData): Promise<Note> => {
+  const response = await api.post<ApiNote>('/notes', noteData);
+  return mapNote(response.data);
 };
 
-export const updateNote = async (
-  id: string,
-  noteData: {
-    title?: string;
-    content?: string;
-    tags?: string[];
-  },
-) => {
-  try {
-    const response = await api.put(`/notes/${id}`, noteData);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating note:', error);
-    throw error;
-  }
+export const updateNote = async (id: string, noteData: UpdateNoteData): Promise<Note> => {
+  const response = await api.patch<ApiNote>(`/notes/${id}`, noteData);
+  return mapNote(response.data);
 };
 
-export const deleteNote = async (id: string) => {
-  try {
-    const response = await api.delete(`/notes/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting note:', error);
-    throw error;
-  }
+export const deleteNote = async (id: string): Promise<{ message: string }> => {
+  const response = await api.delete<{ message: string }>(`/notes/${id}`);
+  return response.data;
 };
