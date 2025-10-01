@@ -73,7 +73,7 @@ export const updateNote = async (id: string, noteData: UpdateNoteData): Promise<
   return mapNote(response.data);
 };
 
-export const deleteNote = async (id: string): Promise<{ message: string }> => {
-  const response = await api.delete<{ message: string }>(`/notes/${id}`);
-  return response.data;
+export const deleteNote = async (id: string): Promise<Note> => {
+  const response = await api.delete<ApiNote>(`/notes/${id}`);
+  return mapNote(response.data);
 };
