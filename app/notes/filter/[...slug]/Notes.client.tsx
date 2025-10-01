@@ -24,19 +24,17 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1); // Скидаємо на першу сторінку при зміні пошуку
+      setPage(1);
     }, 500);
 
     return () => clearTimeout(handler);
   }, [search]);
 
-  // Визначаємо тег для API: приводимо рядок до NoteTag або undefined
+  // Конвертація рядка initialTag у NoteTag або undefined
   const apiTag: NoteTag | undefined =
     initialTag === 'All'
       ? undefined
-      : Object.values(NoteTag).includes(initialTag as NoteTag)
-        ? (initialTag as NoteTag)
-        : undefined;
+      : (Object.values(NoteTag).find((t) => t === initialTag) as NoteTag | undefined);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['notes', page, apiTag, debouncedSearch],
@@ -50,18 +48,13 @@ export default function NotesClient({ initialTag }: NotesClientProps) {
     placeholderData: (previousData) => previousData,
   });
 
+  const totalPages = data ? Math.ceil(data.total / data.perPage) : 0;
+
   return (
     <div className={css.app}>
       <header className={css.toolbar}>
         <SearchBox value={search} onSearch={setSearch} />
-        {data && Math.ceil(data.total / data.perPage) > 1 && (
-          <Pagination
-            page={page}
-            pageCount={Math.ceil(data.total / data.perPage)}
-            onChangePage={setPage}
-          />
-        )}
-
+        {totalPages > 1 && <Pagination page={page} pageCount={totalPages} onChangePage={setPage} />}
         <button className={css.button} onClick={() => setModalOpen(true)}>
           Create note +
         </button>

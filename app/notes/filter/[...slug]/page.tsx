@@ -1,6 +1,7 @@
 import { dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { fetchNotes } from '../../../../lib/api';
 import { getQueryClient } from '../../../../lib/getQueryClient';
+import { NoteTag } from '../../../../types/note';
 import NotesClient from './Notes.client';
 
 interface NotesPageProps {
@@ -13,11 +14,13 @@ export default async function NotesPage({ params }: NotesPageProps) {
   const resolvedParams = await params;
   const queryClient = getQueryClient();
 
-  // Отримуємо тег з параметрів маршруту
-  const tag = resolvedParams.slug?.[0] || 'All';
+  const tagParam = resolvedParams.slug?.[0] || 'All';
 
-  // Для "All" не передаємо жодного тегу, для інших - передаємо конкретний тег
-  const apiTag = tag === 'All' ? undefined : tag;
+  // Конвертація рядка у NoteTag або undefined
+  const apiTag: NoteTag | undefined =
+    tagParam === 'All'
+      ? undefined
+      : (Object.values(NoteTag).find((t) => t === tagParam) as NoteTag | undefined);
 
   await queryClient.prefetchQuery({
     queryKey: ['notes', 1, apiTag],
@@ -26,7 +29,7 @@ export default async function NotesPage({ params }: NotesPageProps) {
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient initialTag={tag} />
+      <NotesClient initialTag={tagParam} />
     </HydrationBoundary>
   );
 }
